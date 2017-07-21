@@ -1,0 +1,25 @@
+%matplotlib inline
+import pandas as pd
+import matplotlib.pylab as plt
+import numpy as np
+from scipy import misc
+
+# Read the file in
+uploaded_img = misc.imread("file name")
+
+plt.imshow(uploaded_img)
+plt.show()
+image_copy = np.copy(uploaded_img)
+
+# Goes through each pixel and set each channel to the average across
+#  all channels
+for i in range(image_copy.shape[0]):
+    for j in range(image_copy.shape[1]):
+        pixel = image_copy[i, j, :]  # get pixel
+        average = np.mean(pixel)  # get average
+
+        image_copy[i, j] = np.array([average] * 3, dtype=np.uint8)
+
+# Display the copy
+plt.imshow(image_copy)
+plt.show()
