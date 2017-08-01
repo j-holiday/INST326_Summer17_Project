@@ -1,6 +1,6 @@
 for i in range(self.image.shape[0]):
             for j in range(self.image.shape[1]):
-                pixel = img_np_array[i, j, :]
+                pixel = self.image[i, j, :]
                 red = pixel[0] #used so names can be used in the later code
                 green = pixel[1]
                 blue = pixel[2]
@@ -8,5 +8,5 @@ for i in range(self.image.shape[0]):
                 new_red = min(255, (red * 0.393 + green * 0.769 + blue * 0.189))
                 new_green = min(255, (red * 0.349 + green * 0.686 + blue * 0.168))
                 new_blue = min(255, (red * 0.272 + green * 0.534 + blue * 0.131))
-                img_np_array[i, j] = np.array([new_red, new_green, new_blue], dtype=np.uint8)
-return img_np_array                
+                self.image[i, j] = np.array([new_red, new_green, new_blue], dtype=np.uint8)
+return self.image                
