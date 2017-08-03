@@ -1,0 +1,16 @@
+import myimage
+
+def apply_filter(filename, filter_name):
+    # Open the image
+    img = myimage.myimage(filename)
+    
+    # Apply the filter
+    if filter_name == "greyscale":
+        img.make_greyscale()
+    elif filter_name == "sepia":
+        img.make_sepia()
+    else:
+        raise Exception("Unsupported filter: %s" % filter_name)
+    
+    # Save the image
+    img.save(filename)
