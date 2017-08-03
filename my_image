@@ -1,0 +1,40 @@
+import numpy as np
+
+from scipy import misc
+
+class myimage(object):
+    
+    def __init__(self, filename):
+        # Reads the file
+        self.image = misc.imread(filename)   
+
+    def make_greyscale(self):
+        '''Go through each pixel and set each channel to the average across
+        all channels'''
+        for i in range(self.image.shape[0]):
+            for j in range(self.image.shape[1]):
+                # Get this pixel
+                pixel = self.image[i, j, :]
+                # Calculate its average
+                average = np.mean(pixel)
+
+                '''set the pixel to a numpy array containing this average
+                and using the data type 8-bit unsigned int'''
+                self.image[i, j] = np.array([average] * 3, dtype=np.uint8)
+        
+    def make_sepia(self):
+        for i in range(self.image.shape[0]):
+            for j in range(self.image.shape[1]):
+                pixel = self.image[i, j, :]
+                # Used so names can be used in the later code
+                red = pixel[0]
+                green = pixel[1]
+                blue = pixel[2] 
+                # Given code on how to create filter
+                new_red = min(255, (red * 0.393 + green * 0.769 + blue * 0.189))
+                new_green = min(255, (red * 0.349 + green * 0.686 + blue * 0.168))
+                new_blue = min(255, (red * 0.272 + green * 0.534 + blue * 0.131))
+                self.image[i, j] = np.array([new_red, new_green, new_blue], dtype=np.uint8)               
+        
+    def save(self, filename):
+        misc.imsave(filename, self.image)
