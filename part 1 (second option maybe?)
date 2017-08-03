@@ -1,3 +1,4 @@
+#GitHub Server code from: Unilsand/SimpleHTTPServerWithUpload.py
 __version__ = "0.1"
 import os
 import posixpath
@@ -7,6 +8,9 @@ import cgi
 import shutil
 import mimetypes
 import re
+# Imported applyfilter file that we created containing filters
+import applyfilter as af
+# Acts as memory buffer
 from io import BytesIO
 
 
@@ -37,22 +41,24 @@ class SimpleHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 
     def do_POST(self):
         """Serve a POST request."""
-        r, info = self.deal_post_data()
-        print((r, info, "by: ", self.client_address))
+        # Parse input and check that file is uploaded
+        r, filename, filter_name = self.deal_post_data()
+        print((r, filename, "by: ", self.client_address))
+        
+        # Apply Filter
+        af.apply_filter(filename, filter_name)
+        
+        # Create html page
         f = BytesIO()
         f.write(b'<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">')
-        f.write(b"<html>\n<title>Upload Result Page</title>\n")
-        f.write(b"<body>\n<h2>Upload Result Page</h2>\n")
+        f.write(b"<html>\n<title>Filtered Image</title>\n")
+        f.write(b"<body>\n<h2>Filtered Image</h2>\n")
         f.write(b"<hr>\n")
-        if r:
-            f.write(b"<strong>Success:</strong>")
-        else:
-            f.write(b"<strong>Failed:</strong>")
-        f.write(info.encode())
+        f.write(("<img src=\"%s\">" % filename).encode())
         f.write(("<br><a href=\"%s\">back</a>" % self.headers['referer']).encode())
-        f.write(b"<hr><small>Powerd By: bones7456, check new version at ")
+        # Added our little title here
+        f.write(b"<hr><small>Powerd By: Filter Your Life ")
         f.write(b"<a href=\"http://li2z.cn/?s=SimpleHTTPServerWithUpload\">")
-        f.write(b"here</a>.</small></body>\n</html>\n")
         length = f.tell()
         f.seek(0)
         self.send_response(200)
@@ -69,17 +75,24 @@ class SimpleHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             return (False, "Content-Type header doesn't contain boundary")
         boundary = content_type.split("=")[1].encode()
         remainbytes = int(self.headers['content-length'])
+        
         line = self.rfile.readline()
         remainbytes -= len(line)
         if not boundary in line:
             return (False, "Content NOT begin with boundary")
         line = self.rfile.readline()
         remainbytes -= len(line)
+        
+        # Get filename
         fn = re.findall(r'Content-Disposition.*name="file"; filename="(.*)"', line.decode())
         if not fn:
             return (False, "Can't find out file name...")
-        #path = self.translate_path(self.path)
-        #fn = os.path.join(path, fn[0])
+        
+        # Professor told us to comment these next two lines out from OG code       
+        # path = self.translate_path(self.path)
+        # fn = os.path.join(path, fn[0])
+        
+        # Professor told us to add fn = fn[0]
         fn = fn[0]
         line = self.rfile.readline()
         remainbytes -= len(line)
@@ -92,6 +105,8 @@ class SimpleHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 
         preline = self.rfile.readline()
         remainbytes -= len(preline)
+        
+        response = (False, "Unexpect Ends of data.", "")
         while remainbytes > 0:
             line = self.rfile.readline()
             remainbytes -= len(line)
@@ -101,11 +116,34 @@ class SimpleHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
                     preline = preline[0:-1]
                 out.write(preline)
                 out.close()
-                return (True, "File '%s' upload success!" % fn)
+
+                response = (True, fn)
+                break
             else:
                 out.write(preline)
                 preline = line
-        return (False, "Unexpect Ends of data.")
+        
+        # Removed previous return statements so we could execute the following loop:
+        while remainbytes > 0:
+            line = self.rfile.readline()
+            remainbytes -= len(line) 
+            # Checks to find "filter" in string
+            if "filter" in str(line):
+                # Blank line
+                line = self.rfile.readline() 
+                # Get filter
+                filter_name = self.rfile.readline()
+                # Remove b' at start because it is a byte object
+                filter_name = filter_name.decode()
+                # Remove \r\n
+                filter_name = filter_name.rstrip()
+                
+                # Add filter to response
+                # Example: this makes the response look like (True, yourimage.jpg, sepia)
+                response = (response[0], response[1], filter_name)
+                break
+                
+        return response
 
     def send_head(self):
         """Common code for GET and HEAD commands.
@@ -168,6 +206,9 @@ class SimpleHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         f.write(b"<hr>\n")
         f.write(b"<form ENCTYPE=\"multipart/form-data\" method=\"post\">")
         f.write(b"<input name=\"file\" type=\"file\"/>")
+        # Created drop down menu from the following source:
+        # https://pythonschool.net/server-side-scripting/more-on-html-forms/ 
+        f.write(b"Filter:<select name=\"filter\"><option value=\"greyscale\">greyscale</option><option value=\"sepia\">sepia</option></select>")
         f.write(b"<input type=\"submit\" value=\"upload\"/></form>\n")
         f.write(b"<hr>\n<ul>\n")
         for name in list:
